@@ -49,6 +49,55 @@
     });
   });
 
+  const teamTabButtons = [...document.querySelectorAll('[data-team-tab]')];
+  const teamViews = [...document.querySelectorAll('[data-team-view]')];
+
+  const activateTeamTab = tabName => {
+    if (!teamTabButtons.length || !teamViews.length) return;
+    teamTabButtons.forEach(button => button.classList.toggle('active', button.dataset.teamTab === tabName));
+    teamViews.forEach(view => {
+      view.hidden = view.dataset.teamView !== tabName;
+    });
+    try { sessionStorage.setItem('team-view', tabName); } catch (_) {}
+  };
+
+  if (teamTabButtons.length) {
+    let initialTab = 'overview';
+    try { initialTab = sessionStorage.getItem('team-view') || 'overview'; } catch (_) {}
+    if (!teamTabButtons.some(button => button.dataset.teamTab === initialTab)) initialTab = 'overview';
+    activateTeamTab(initialTab);
+    teamTabButtons.forEach(button => button.addEventListener('click', () => activateTeamTab(button.dataset.teamTab)));
+  }
+
+  const teamFilterButtons = [...document.querySelectorAll('[data-team-filter]')];
+  const teamPeople = [...document.querySelectorAll('[data-team-person]')];
+  const teamVisibleCount = document.querySelector('[data-team-visible-count]');
+
+  const applyTeamFilter = filter => {
+    let visible = 0;
+    teamPeople.forEach(card => {
+      const pocs = Number(card.dataset.teamPocs || 0);
+      const attention = Number(card.dataset.teamAttention || 0);
+      const show = filter === 'all' || (filter === 'poc' && pocs > 0) || (filter === 'attention' && attention > 0);
+      card.hidden = !show;
+      if (show) visible += 1;
+    });
+    teamFilterButtons.forEach(button => button.classList.toggle('active', button.dataset.teamFilter === filter));
+    if (teamVisibleCount) teamVisibleCount.textContent = `${visible} analista${visible === 1 ? '' : 's'}`;
+  };
+
+  teamFilterButtons.forEach(button => button.addEventListener('click', () => applyTeamFilter(button.dataset.teamFilter)));
+
+  document.querySelectorAll('[data-open-team-profile]').forEach(button => {
+    button.addEventListener('click', () => {
+      activateTeamTab('profiles');
+      const target = document.getElementById(`analyst-${button.dataset.openTeamProfile}`);
+      if (target) {
+        setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+      }
+    });
+  });
+
   const isoToUTC = value => {
     if (!value) return null;
     const [year, month, day] = value.split('-').map(Number);
