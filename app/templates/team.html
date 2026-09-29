@@ -2,75 +2,177 @@
 {% block page_title %}Equipe{% endblock %}
 {% block eyebrow %}TEAM CAPACITY & OWNERSHIP{% endblock %}
 {% block content %}
-<div class="page-actions">
+<style>
+  .team-view-tabs{display:flex;gap:8px;align-items:center;margin-bottom:18px;padding:6px;width:max-content;max-width:100%;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}
+  .team-view-tabs button{border:0;background:transparent;color:#8290a6;padding:10px 15px;border-radius:10px;font-weight:800;cursor:pointer;transition:.18s}
+  .team-view-tabs button.active{background:linear-gradient(135deg,rgba(91,140,255,.22),rgba(78,216,233,.10));color:#fff;box-shadow:inset 0 0 0 1px rgba(78,216,233,.15)}
+  .team-view[hidden]{display:none!important}
+  .team-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+  .team-summary-card{padding:20px;position:relative;overflow:hidden}
+  .team-summary-card:after{content:"";position:absolute;width:110px;height:110px;border:1px solid rgba(78,216,233,.08);border-radius:50%;right:-40px;top:-50px}
+  .team-summary-card span,.team-summary-card small{display:block;color:var(--muted)}
+  .team-summary-card span{font-size:11px;font-weight:800;letter-spacing:.04em}.team-summary-card strong{display:block;font-size:31px;margin:8px 0 3px}
+  .team-dashboard-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px}
+  .team-filter-group{display:flex;gap:7px;flex-wrap:wrap}.team-filter{border:1px solid var(--line);background:rgba(255,255,255,.025);color:#93a0b5;padding:8px 12px;border-radius:999px;font-size:11px;font-weight:800;cursor:pointer}
+  .team-filter.active{color:#fff;border-color:rgba(78,216,233,.25);background:rgba(78,216,233,.09)}
+  .team-visible-count{font-size:11px;color:var(--muted)}
+  .team-visual-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+  .team-visual-card{position:relative;overflow:hidden;padding:20px;min-height:248px;transition:.2s;isolation:isolate}
+  .team-visual-card:hover{transform:translateY(-4px);border-color:rgba(78,216,233,.22);box-shadow:0 22px 55px rgba(0,0,0,.34)}
+  .team-visual-card:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 5%,rgba(91,140,255,.15),transparent 34%);z-index:-1}
+  .team-person-head{display:flex;align-items:center;gap:14px}.team-photo-large,.team-photo-fallback{width:78px;height:78px;border-radius:22px;flex:0 0 78px}.team-photo-large{object-fit:cover;border:1px solid rgba(255,255,255,.12);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+  .team-photo-fallback{display:grid;place-items:center;background:linear-gradient(135deg,#1f3a68,#164652);font-size:27px;font-weight:900}
+  .team-person-copy{min-width:0}.team-person-copy h3{margin:0 0 5px;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.team-person-copy p{margin:0;color:var(--cyan);font-size:11px;font-weight:800}.team-person-copy small{display:block;margin-top:5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .team-volume-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.team-volume-grid div{padding:13px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}.team-volume-grid b{display:block;font-size:24px}.team-volume-grid span{display:block;margin-top:3px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+  .team-product-line{display:flex;justify-content:space-between;gap:8px;margin-top:12px;color:var(--muted);font-size:10px}.team-card-actions{display:flex;justify-content:space-between;align-items:center;margin-top:16px}.team-card-actions button{border:0;background:transparent;color:var(--cyan);font-size:11px;font-weight:900;cursor:pointer;padding:0}.team-card-actions .tag{font-size:9px}
+  .team-detail-grid{margin-top:0}
+  @media(max-width:1100px){.team-visual-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.team-summary-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:720px){.team-visual-grid,.team-summary-grid{grid-template-columns:1fr}.team-dashboard-toolbar{align-items:flex-start;flex-direction:column}}
+</style>
+
+{% set totals = namespace(analysts=0, projects=0, pocs=0, attention=0, max_projects=1) %}
+{% for x in cards %}
+  {% set totals.analysts = totals.analysts + 1 %}
+  {% set totals.projects = totals.projects + (x.projects|length) %}
+  {% set totals.pocs = totals.pocs + x.active_pocs %}
+  {% set totals.attention = totals.attention + x.attention %}
+  {% if (x.projects|length) > totals.max_projects %}{% set totals.max_projects = x.projects|length %}{% endif %}
+{% endfor %}
+
+<div class="page-actions" style="justify-content:space-between;align-items:center;gap:16px">
+  <div class="team-view-tabs" data-team-tabs>
+    <button type="button" class="active" data-team-tab="overview">Visão do time</button>
+    <button type="button" data-team-tab="profiles">Perfis & projetos</button>
+  </div>
   {% if can_edit %}<button class="btn primary" data-open="analystDialog">+ Cadastrar analista</button>{% endif %}
 </div>
 
-<section class="team-detail-grid">
-  {% for x in cards %}
-  <article class="analyst-panel card" data-team-progress-panel>
-    <div class="analyst-head">
-      {% if x.analyst.photo_data %}
-        <img class="avatar-xl avatar-photo" src="{{ x.analyst.photo_data }}" alt="Foto de {{ x.analyst.name }}">
-      {% else %}
-        <div class="avatar-xl">{{ x.analyst.name[0]|upper }}</div>
-      {% endif %}
-      <div class="analyst-identity">
-        <h3>{{ x.analyst.name }}</h3>
-        <p>{{ x.analyst.role_title or 'Analista' }}</p>
-        <small>{{ x.analyst.email or 'Sem e-mail' }}</small>
+<section class="team-view" data-team-view="overview">
+  <div class="team-summary-grid">
+    <article class="team-summary-card card"><span>Analistas</span><strong>{{ totals.analysts }}</strong><small>perfis ativos</small></article>
+    <article class="team-summary-card card"><span>Projetos</span><strong>{{ totals.projects }}</strong><small>carteira distribuída</small></article>
+    <article class="team-summary-card card"><span>POCs em execução</span><strong>{{ totals.pocs }}</strong><small>rodando agora</small></article>
+    <article class="team-summary-card card"><span>Sinais de atenção</span><strong>{{ totals.attention }}</strong><small>projetos em atenção/crítico</small></article>
+  </div>
+
+  <section class="panel card">
+    <div class="panel-head"><div><small>TEAM DASHBOARD</small><h3>Capacidade e distribuição</h3><p>Fotos, volume de projetos e POCs por analista.</p></div><span class="badge">{{ totals.projects }} projetos</span></div>
+    <div class="team-dashboard-toolbar">
+      <div class="team-filter-group">
+        <button type="button" class="team-filter active" data-team-filter="all">Todos</button>
+        <button type="button" class="team-filter" data-team-filter="poc">Com POC</button>
+        <button type="button" class="team-filter" data-team-filter="attention">Com atenção</button>
       </div>
-      <div class="analyst-card-actions">
-        <span class="progress-badge" data-team-average>{{ x.avg_progress }}%</span>
-        {% if can_edit %}<button class="mini-action" type="button" data-open="editAnalyst{{ x.analyst.id }}">Editar</button>{% endif %}
-      </div>
+      <span class="team-visible-count" data-team-visible-count>{{ totals.analysts }} analista(s)</span>
     </div>
-    <div class="analyst-stats">
-      <div><b>{{ x.projects|length }}</b><span>Projetos</span></div>
-      <div><b>{{ x.active_pocs }}</b><span>POCs</span></div>
-      <div><b>{{ x.attention }}</b><span>Atenção</span></div>
-    </div>
-    <div class="analyst-projects">
-      {% for p in x.projects %}
-        <a href="/projects/{{ p.id }}" data-poc-progress data-team-project-progress data-poc-start="{{ p.poc_start_date.isoformat() if p.poc_start_date else '' }}" data-poc-end="{{ p.poc_end_date.isoformat() if p.poc_end_date else '' }}"><span class="product-chip {{ p.product|lower }}">{{ p.product }}</span><b>{{ p.client.name }}</b><small data-progress-value>0%</small></a>
+
+    <div class="team-visual-grid" data-team-visual-grid>
+      {% for x in cards %}
+        {% set mix = namespace(locator=0, ada=0) %}
+        {% for p in x.projects %}
+          {% if p.product == 'Locator' %}{% set mix.locator = mix.locator + 1 %}{% endif %}
+          {% if p.product == 'ADA' %}{% set mix.ada = mix.ada + 1 %}{% endif %}
+        {% endfor %}
+        <article class="team-visual-card card" data-team-person data-team-pocs="{{ x.active_pocs }}" data-team-attention="{{ x.attention }}" data-team-analyst="{{ x.analyst.id }}">
+          <div class="team-person-head">
+            {% if x.analyst.photo_data %}
+              <img class="team-photo-large" src="{{ x.analyst.photo_data }}" alt="Foto de {{ x.analyst.name }}" loading="lazy">
+            {% else %}
+              <div class="team-photo-fallback">{{ x.analyst.name[0]|upper }}</div>
+            {% endif %}
+            <div class="team-person-copy">
+              <h3>{{ x.analyst.name }}</h3>
+              <p>{{ x.analyst.role_title or 'Analista' }}</p>
+              <small>{{ x.analyst.email or 'Sem e-mail' }}</small>
+            </div>
+          </div>
+
+          <div class="team-volume-grid">
+            <div><b>{{ x.projects|length }}</b><span>Projetos</span></div>
+            <div><b>{{ x.active_pocs }}</b><span>POCs ativas</span></div>
+          </div>
+
+          <div class="load"><i style="width:{{ ((x.projects|length) / totals.max_projects * 100) if totals.max_projects else 0 }}%"></i></div>
+          <div class="team-product-line"><span>Locator {{ mix.locator }}</span><span>ADA {{ mix.ada }}</span><span>{{ x.attention }} atenção</span></div>
+          <div class="team-card-actions">
+            <span class="tag">Carga relativa {{ (((x.projects|length) / totals.max_projects * 100) if totals.max_projects else 0)|round|int }}%</span>
+            <button type="button" data-open-team-profile="{{ x.analyst.id }}">Ver projetos →</button>
+          </div>
+        </article>
       {% else %}
-        <p class="muted">Sem projetos atribuídos.</p>
+        <div class="empty-state">Cadastre os analistas para começar a visualizar a equipe.</div>
       {% endfor %}
     </div>
-  </article>
+  </section>
+</section>
 
-  {% if can_edit %}
-  <dialog id="editAnalyst{{ x.analyst.id }}" class="modal">
-    <form method="post" action="/team/{{ x.analyst.id }}/edit" class="modal-card compact" enctype="multipart/form-data">
-      <div class="modal-head">
-        <div><small>TEAM PROFILE</small><h2>Editar analista</h2></div>
-        <button type="button" class="icon-close" data-close>×</button>
-      </div>
-      <div class="profile-editor">
-        <div class="photo-editor">
-          {% if x.analyst.photo_data %}
-            <img id="photoPreview{{ x.analyst.id }}" class="profile-photo-preview" src="{{ x.analyst.photo_data }}" alt="Foto atual">
-          {% else %}
-            <div id="photoFallback{{ x.analyst.id }}" class="profile-photo-fallback">{{ x.analyst.name[0]|upper }}</div>
-            <img id="photoPreview{{ x.analyst.id }}" class="profile-photo-preview hidden" alt="Prévia da foto">
-          {% endif %}
-          <label class="file-picker">Trocar foto<input type="file" name="photo" accept="image/png,image/jpeg,image/webp" data-photo-input data-photo-target="photoPreview{{ x.analyst.id }}" data-fallback-target="photoFallback{{ x.analyst.id }}"></label>
-          {% if x.analyst.photo_data %}<label class="check-line"><input type="checkbox" name="remove_photo" value="1"> Remover foto atual</label>{% endif %}
-          <small>JPG, PNG ou WEBP · até {{ max_photo_mb }} MB</small>
+<section class="team-view" data-team-view="profiles" hidden>
+  <section class="team-detail-grid">
+    {% for x in cards %}
+    <article class="analyst-panel card" id="analyst-{{ x.analyst.id }}" data-team-progress-panel>
+      <div class="analyst-head">
+        {% if x.analyst.photo_data %}
+          <img class="avatar-xl avatar-photo" src="{{ x.analyst.photo_data }}" alt="Foto de {{ x.analyst.name }}" loading="lazy">
+        {% else %}
+          <div class="avatar-xl">{{ x.analyst.name[0]|upper }}</div>
+        {% endif %}
+        <div class="analyst-identity">
+          <h3>{{ x.analyst.name }}</h3>
+          <p>{{ x.analyst.role_title or 'Analista' }}</p>
+          <small>{{ x.analyst.email or 'Sem e-mail' }}</small>
         </div>
-        <div class="profile-fields">
-          <label>Nome<input name="name" value="{{ x.analyst.name }}" required></label>
-          <label>E-mail<input type="email" name="email" value="{{ x.analyst.email or '' }}"></label>
-          <label>Cargo<input name="role_title" value="{{ x.analyst.role_title or 'Analista' }}"></label>
+        <div class="analyst-card-actions">
+          <span class="progress-badge" data-team-average>{{ x.avg_progress }}%</span>
+          {% if can_edit %}<button class="mini-action" type="button" data-open="editAnalyst{{ x.analyst.id }}">Editar</button>{% endif %}
         </div>
       </div>
-      <div class="modal-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary">Salvar alterações</button></div>
-    </form>
-  </dialog>
-  {% endif %}
-  {% else %}
-    <div class="empty-state card">Cadastre os analistas e o painel começará a mostrar carga, POCs e progresso individual.</div>
-  {% endfor %}
+      <div class="analyst-stats">
+        <div><b>{{ x.projects|length }}</b><span>Projetos</span></div>
+        <div><b>{{ x.active_pocs }}</b><span>POCs</span></div>
+        <div><b>{{ x.attention }}</b><span>Atenção</span></div>
+      </div>
+      <div class="analyst-projects">
+        {% for p in x.projects %}
+          <a href="/projects/{{ p.id }}" data-poc-progress data-team-project-progress data-poc-start="{{ p.poc_start_date.isoformat() if p.poc_start_date else '' }}" data-poc-end="{{ p.poc_end_date.isoformat() if p.poc_end_date else '' }}"><span class="product-chip {{ p.product|lower }}">{{ p.product }}</span><b>{{ p.client.name }}</b><small data-progress-value>0%</small></a>
+        {% else %}
+          <p class="muted">Sem projetos atribuídos.</p>
+        {% endfor %}
+      </div>
+    </article>
+
+    {% if can_edit %}
+    <dialog id="editAnalyst{{ x.analyst.id }}" class="modal">
+      <form method="post" action="/team/{{ x.analyst.id }}/edit" class="modal-card compact" enctype="multipart/form-data">
+        <div class="modal-head">
+          <div><small>TEAM PROFILE</small><h2>Editar analista</h2></div>
+          <button type="button" class="icon-close" data-close>×</button>
+        </div>
+        <div class="profile-editor">
+          <div class="photo-editor">
+            {% if x.analyst.photo_data %}
+              <img id="photoPreview{{ x.analyst.id }}" class="profile-photo-preview" src="{{ x.analyst.photo_data }}" alt="Foto atual">
+            {% else %}
+              <div id="photoFallback{{ x.analyst.id }}" class="profile-photo-fallback">{{ x.analyst.name[0]|upper }}</div>
+              <img id="photoPreview{{ x.analyst.id }}" class="profile-photo-preview hidden" alt="Prévia da foto">
+            {% endif %}
+            <label class="file-picker">Trocar foto<input type="file" name="photo" accept="image/png,image/jpeg,image/webp" data-photo-input data-photo-target="photoPreview{{ x.analyst.id }}" data-fallback-target="photoFallback{{ x.analyst.id }}"></label>
+            {% if x.analyst.photo_data %}<label class="check-line"><input type="checkbox" name="remove_photo" value="1"> Remover foto atual</label>{% endif %}
+            <small>JPG, PNG ou WEBP · até {{ max_photo_mb }} MB</small>
+          </div>
+          <div class="profile-fields">
+            <label>Nome<input name="name" value="{{ x.analyst.name }}" required></label>
+            <label>E-mail<input type="email" name="email" value="{{ x.analyst.email or '' }}"></label>
+            <label>Cargo<input name="role_title" value="{{ x.analyst.role_title or 'Analista' }}"></label>
+          </div>
+        </div>
+        <div class="modal-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary">Salvar alterações</button></div>
+      </form>
+    </dialog>
+    {% endif %}
+    {% else %}
+      <div class="empty-state card">Cadastre os analistas e o painel começará a mostrar carga, POCs e progresso individual.</div>
+    {% endfor %}
+  </section>
 </section>
 
 {% if can_edit %}
