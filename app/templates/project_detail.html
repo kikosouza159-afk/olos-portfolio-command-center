@@ -44,7 +44,14 @@
 
 {% if can_edit %}
 <section class="panel card">
-  <div class="panel-head"><div><small>CONTROL PANEL</small><h3>Atualizar projeto</h3></div></div>
+  <div class="panel-head">
+    <div><small>CONTROL PANEL</small><h3>Atualizar projeto</h3></div>
+    {% if can_delete_project %}
+    <form method="post" action="/projects/{{ project.id }}/delete" onsubmit="return confirm('Excluir este projeto da carteira? Esta ação vai removê-lo das visões do painel.');">
+      <button class="btn ghost" type="submit" style="color:var(--red);border-color:rgba(255,101,119,.28)">Excluir projeto</button>
+    </form>
+    {% endif %}
+  </div>
   <form method="post" action="/projects/{{ project.id }}/update" class="form-grid">
     <label>Produto<select name="product" data-poc-product>{% for x in products %}<option value="{{ x }}" data-poc-days="{{ poc_days_default.get(x, 15) }}" {% if project.product==x %}selected{% endif %}>{{ x }}</option>{% endfor %}</select></label>
     <label>Analista<select name="analyst_id"><option value="">Sem responsável</option>{% for a in analysts %}<option value="{{ a.id }}" {% if project.analyst_id==a.id %}selected{% endif %}>{{ a.name }}</option>{% endfor %}</select></label>
