@@ -27,7 +27,9 @@ class Analyst(Base):
     name: Mapped[str] = mapped_column(String(120), unique=True)
     email: Mapped[str | None] = mapped_column(String(180))
     role_title: Mapped[str | None] = mapped_column(String(100), default="Analista")
-    photo_data: Mapped[str | None] = mapped_column(Text)
+    # Fotos podem chegar perto de 2 MB. Mantemos a coluna deferida para que
+    # listagens e páginas comuns não trafeguem Base64 desnecessariamente.
+    photo_data: Mapped[str | None] = mapped_column(Text, deferred=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     projects: Mapped[list["Project"]] = relationship(back_populates="analyst")
@@ -40,7 +42,9 @@ class Client(Base):
     segment: Mapped[str | None] = mapped_column(String(120))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    projects: Mapped[list["Project"]] = relationship(back_populates="client")
+    # O dashboard percorre a carteira para consolidar potencial financeiro.
+    # selectin evita uma consulta individual por cliente (problema N+1).
+    projects: Mapped[list["Project"]] = relationship(back_populates="client", lazy="selectin")
 
 
 class Project(Base):
@@ -69,8 +73,10 @@ class Project(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    client: Mapped[Client] = relationship(back_populates="projects")
-    analyst: Mapped[Analyst | None] = relationship(back_populates="projects")
+    # Muitos cards exibem cliente e responsável. joined elimina consultas
+    # extras principalmente na visão de Equipe.
+    client: Mapped[Client] = relationship(back_populates="projects", lazy="joined")
+    analyst: Mapped[Analyst | None] = relationship(back_populates="projects", lazy="joined")
     metrics: Mapped[list["ProjectMetric"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     history: Mapped[list["ProjectHistory"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
