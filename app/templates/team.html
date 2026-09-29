@@ -8,7 +8,7 @@
 
 <section class="team-detail-grid">
   {% for x in cards %}
-  <article class="analyst-panel card">
+  <article class="analyst-panel card" data-team-progress-panel>
     <div class="analyst-head">
       {% if x.analyst.photo_data %}
         <img class="avatar-xl avatar-photo" src="{{ x.analyst.photo_data }}" alt="Foto de {{ x.analyst.name }}">
@@ -21,7 +21,7 @@
         <small>{{ x.analyst.email or 'Sem e-mail' }}</small>
       </div>
       <div class="analyst-card-actions">
-        <span class="progress-badge">{{ x.avg_progress }}%</span>
+        <span class="progress-badge" data-team-average>{{ x.avg_progress }}%</span>
         {% if can_edit %}<button class="mini-action" type="button" data-open="editAnalyst{{ x.analyst.id }}">Editar</button>{% endif %}
       </div>
     </div>
@@ -32,7 +32,7 @@
     </div>
     <div class="analyst-projects">
       {% for p in x.projects %}
-        <a href="/projects/{{ p.id }}"><span class="product-chip {{ p.product|lower }}">{{ p.product }}</span><b>{{ p.client.name }}</b><small>{{ p.progress_percent }}%</small></a>
+        <a href="/projects/{{ p.id }}" data-poc-progress data-team-project-progress data-poc-start="{{ p.poc_start_date.isoformat() if p.poc_start_date else '' }}" data-poc-end="{{ p.poc_end_date.isoformat() if p.poc_end_date else '' }}"><span class="product-chip {{ p.product|lower }}">{{ p.product }}</span><b>{{ p.client.name }}</b><small data-progress-value>0%</small></a>
       {% else %}
         <p class="muted">Sem projetos atribuídos.</p>
       {% endfor %}
