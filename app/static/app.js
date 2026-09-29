@@ -38,17 +38,20 @@
 
   document.querySelectorAll('form').forEach(form => {
     const product = form.querySelector('[data-poc-product]');
-    const start = form.querySelector('[data-poc-start]');
-    const days = form.querySelector('[data-poc-days]');
-    const end = form.querySelector('[data-poc-end]');
+    const start = form.querySelector('input[data-poc-start]');
+    const days = form.querySelector('input[data-poc-days]');
+    const end = form.querySelector('input[data-poc-end]');
     if (!start || !days || !end) return;
 
     const refreshEnd = () => {
       end.value = addCalendarDaysInclusive(start.value, days.value);
     };
 
+    start.addEventListener('input', refreshEnd);
     start.addEventListener('change', refreshEnd);
     days.addEventListener('input', refreshEnd);
+    days.addEventListener('change', refreshEnd);
+
     product?.addEventListener('change', () => {
       const option = product.options[product.selectedIndex];
       if (option?.dataset.pocDays) days.value = option.dataset.pocDays;
