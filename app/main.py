@@ -25,6 +25,10 @@ load_dotenv()
 APP_NAME = os.getenv("APP_NAME", "OLOS Portfolio Command Center")
 SECRET_KEY = os.getenv("SECRET_KEY", "local-change-me")
 SESSION_HTTPS_ONLY = os.getenv("SESSION_HTTPS_ONLY", "false").lower() == "true"
+PROJECT_DELETE_USERNAME = os.getenv(
+    "PROJECT_DELETE_USERNAME",
+    os.getenv("INITIAL_ADMIN_USERNAME", "gerber"),
+).strip().lower()
 
 PRODUCTS = ["Locator", "ADA"]
 POC_DAYS_DEFAULT = {"Locator": 15, "ADA": 15}
@@ -106,6 +110,15 @@ def startup():
 
 def redirect_login():
     return RedirectResponse("/login", 303)
+
+
+def can_delete_project(user: User | None) -> bool:
+    return bool(
+        user
+        and user.active
+        and is_admin(user)
+        and user.username.strip().lower() == PROJECT_DELETE_USERNAME
+    )
 
 
 def to_date(value: str | None):
@@ -229,6 +242,7 @@ def base_context(user: User, db: Session):
         "stages": STAGES,
         "statuses": STATUSES,
         "can_edit": can_edit(user),
+        "can_delete_project": can_delete_project(user),
         "is_admin": is_admin(user),
     }
 
@@ -493,12 +507,12 @@ def delete_project(project_id: int, request: Request, db: Session = Depends(get_
     user = get_session_user(request, db)
     if not user:
         return redirect_login()
-    if not is_admin(user):
-        return HTMLResponse("Sem permissão", 403)
+    if not can_delete_project(user):
+        return HTMLResponse("Sem permissão para excluir projetos", 403)
     project = db.get(Project, project_id)
-    if project:
+    if project and project.active:
         project.active = False
-        db.add(ProjectHistory(project_id=project.id, action="DELETE", summary=f"Desativado por {user.name}"))
+        db.add(ProjectHistory(project_id=project.id, action="DELETE", summary=f"Excluído por {user.name}"))
         db.commit()
     return RedirectResponse("/projects", 303)
 
