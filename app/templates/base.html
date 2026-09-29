@@ -54,9 +54,6 @@
         <label>Status<select name="status">{% for x in statuses %}<option>{{ x }}</option>{% endfor %}</select></label>
         <label>Saúde<select name="health">{% for x in healths %}<option>{{ x }}</option>{% endfor %}</select></label>
         <label>Potencial financeiro mensal<input name="potential_revenue" value="0"></label>
-        <label class="span-2">Objetivo<textarea name="objective" rows="2" placeholder="O que precisa ser provado nesta POC?"></textarea></label>
-        <label class="span-2">Próxima ação<textarea name="next_step" rows="2" placeholder="Próxima entrega objetiva e responsável"></textarea></label>
-        <label class="span-2">Bloqueio<textarea name="blocker" rows="2" placeholder="O que está impedindo a evolução?"></textarea></label>
         <label class="span-2">Observações<textarea name="notes" rows="3"></textarea></label>
       </div>
       <div class="modal-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary">Salvar projeto</button></div>
