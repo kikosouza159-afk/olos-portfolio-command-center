@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ app_name }}</title><link rel="stylesheet" href="/static/style.css?v=1.0"></head>
+<body class="login-page">
+  <div class="login-orbit orbit-a"></div><div class="login-orbit orbit-b"></div>
+  <section class="login-shell">
+    <div class="login-brand"><span class="brand-mark xl"><i></i><b></b></span><small>PORTFOLIO INTELLIGENCE</small><h1>Transforme POCs em<br><em>decisões visíveis.</em></h1><p>Clientes, analistas, prazos, riscos e resultados de Locator & ADA em uma única torre de controle.</p>
+      <div class="login-points"><span>01 <b>Governança</b></span><span>02 <b>Execução</b></span><span>03 <b>Resultado</b></span></div>
+    </div>
+    <form method="post" action="/login" class="login-card">
+      <div class="login-status"><i></i> Ambiente protegido</div>
+      <h2>Acessar cockpit</h2><p>Entre com seu usuário para continuar.</p>
+      {% if error %}<div class="alert danger">{{ error }}</div>{% endif %}
+      <label>Usuário<input name="username" autocomplete="username" required autofocus></label>
+      <label>Senha<input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="btn primary full">Entrar no Command Center</button>
+      <small class="login-help">Primeiro acesso local: <b>admin / admin123</b>. Altere antes de publicar.</small>
+    </form>
+  </section>
+</body>
+</html>

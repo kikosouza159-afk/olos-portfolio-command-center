@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block page_title %}Equipe{% endblock %}
+{% block eyebrow %}TEAM CAPACITY & OWNERSHIP{% endblock %}
+{% block content %}
+<div class="page-actions">
+  {% if can_edit %}<button class="btn primary" data-open="analystDialog">+ Cadastrar analista</button>{% endif %}
+</div>
+
+<section class="team-detail-grid">
+  {% for x in cards %}
+  <article class="analyst-panel card">
+    <div class="analyst-head">
+      {% if x.analyst.photo_data %}
+        <img class="avatar-xl avatar-photo" src="{{ x.analyst.photo_data }}" alt="Foto de {{ x.analyst.name }}">
+      {% else %}
+        <div class="avatar-xl">{{ x.analyst.name[0]|upper }}</div>
+      {% endif %}
+      <div class="analyst-identity">
+        <h3>{{ x.analyst.name }}</h3>
+        <p>{{ x.analyst.role_title or 'Analista' }}</p>
+        <small>{{ x.analyst.email or 'Sem e-mail' }}</small>
+      </div>
+      <div class="analyst-card-actions">
+        <span class="progress-badge">{{ x.avg_progress }}%</span>
+        {% if can_edit %}<button class="mini-action" type="button" data-open="editAnalyst{{ x.analyst.id }}">Editar</button>{% endif %}
+      </div>
+    </div>
+    <div class="analyst-stats">
+      <div><b>{{ x.projects|length }}</b><span>Projetos</span></div>
+      <div><b>{{ x.active_pocs }}</b><span>POCs</span></div>
+      <div><b>{{ x.attention }}</b><span>Atenção</span></div>
+    </div>
+    <div class="analyst-projects">
+      {% for p in x.projects %}
+        <a href="/projects/{{ p.id }}"><span class="product-chip {{ p.product|lower }}">{{ p.product }}</span><b>{{ p.client.name }}</b><small>{{ p.progress_percent }}%</small></a>
+      {% else %}
+        <p class="muted">Sem projetos atribuídos.</p>
+      {% endfor %}
+    </div>
+  </article>
+
+  {% if can_edit %}
+  <dialog id="editAnalyst{{ x.analyst.id }}" class="modal">
+    <form method="post" action="/team/{{ x.analyst.id }}/edit" class="modal-card compact" enctype="multipart/form-data">
+      <div class="modal-head">
+        <div><small>TEAM PROFILE</small><h2>Editar analista</h2></div>
+        <button type="button" class="icon-close" data-close>×</button>
+      </div>
+      <div class="profile-editor">
+        <div class="photo-editor">
+          {% if x.analyst.photo_data %}
+            <img id="photoPreview{{ x.analyst.id }}" class="profile-photo-preview" src="{{ x.analyst.photo_data }}" alt="Foto atual">
+          {% else %}
+            <div id="photoFallback{{ x.analyst.id }}" class="profile-photo-fallback">{{ x.analyst.name[0]|upper }}</div>
+            <img id="photoPreview{{ x.analyst.id }}" class="profile-photo-preview hidden" alt="Prévia da foto">
+          {% endif %}
+          <label class="file-picker">Trocar foto<input type="file" name="photo" accept="image/png,image/jpeg,image/webp" data-photo-input data-photo-target="photoPreview{{ x.analyst.id }}" data-fallback-target="photoFallback{{ x.analyst.id }}"></label>
+          {% if x.analyst.photo_data %}<label class="check-line"><input type="checkbox" name="remove_photo" value="1"> Remover foto atual</label>{% endif %}
+          <small>JPG, PNG ou WEBP · até {{ max_photo_mb }} MB</small>
+        </div>
+        <div class="profile-fields">
+          <label>Nome<input name="name" value="{{ x.analyst.name }}" required></label>
+          <label>E-mail<input type="email" name="email" value="{{ x.analyst.email or '' }}"></label>
+          <label>Cargo<input name="role_title" value="{{ x.analyst.role_title or 'Analista' }}"></label>
+        </div>
+      </div>
+      <div class="modal-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary">Salvar alterações</button></div>
+    </form>
+  </dialog>
+  {% endif %}
+  {% else %}
+    <div class="empty-state card">Cadastre os analistas e o painel começará a mostrar carga, POCs e progresso individual.</div>
+  {% endfor %}
+</section>
+
+{% if can_edit %}
+<dialog id="analystDialog" class="modal">
+  <form method="post" action="/team/new" class="modal-card compact" enctype="multipart/form-data">
+    <div class="modal-head"><div><small>TEAM SETUP</small><h2>Novo analista</h2></div><button type="button" class="icon-close" data-close>×</button></div>
+    <div class="profile-editor">
+      <div class="photo-editor">
+        <div id="newPhotoFallback" class="profile-photo-fallback">+</div>
+        <img id="newPhotoPreview" class="profile-photo-preview hidden" alt="Prévia da foto">
+        <label class="file-picker">Adicionar foto<input type="file" name="photo" accept="image/png,image/jpeg,image/webp" data-photo-input data-photo-target="newPhotoPreview" data-fallback-target="newPhotoFallback"></label>
+        <small>JPG, PNG ou WEBP · até {{ max_photo_mb }} MB</small>
+      </div>
+      <div class="profile-fields">
+        <label>Nome<input name="name" required></label>
+        <label>E-mail<input type="email" name="email"></label>
+        <label>Cargo<input name="role_title" value="Analista"></label>
+      </div>
+    </div>
+    <div class="modal-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary">Salvar analista</button></div>
+  </form>
+</dialog>
+{% endif %}
+{% endblock %}

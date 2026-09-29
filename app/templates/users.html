@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block page_title %}Usuários{% endblock %}
+{% block eyebrow %}ACCESS CONTROL{% endblock %}
+{% block content %}
+<div class="page-actions"><button class="btn primary" data-open="userDialog">+ Novo usuário</button></div>
+<section class="table-card card"><table><thead><tr><th>Nome</th><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Status</th><th></th></tr></thead><tbody>{% for x in rows %}<tr><td><b>{{ x.name }}</b></td><td>{{ x.username }}</td><td>{{ x.email }}</td><td><span class="tag">{{ x.role }}</span></td><td>{{ 'Ativo' if x.active else 'Inativo' }}</td><td>{% if x.id != user.id %}<form method="post" action="/users/{{ x.id }}/toggle"><button class="btn tiny ghost">{{ 'Desativar' if x.active else 'Ativar' }}</button></form>{% endif %}</td></tr>{% endfor %}</tbody></table></section>
+<dialog id="userDialog" class="modal"><form method="post" action="/users/new" class="modal-card compact"><div class="modal-head"><div><small>ACCESS CONTROL</small><h2>Novo usuário</h2></div><button type="button" class="icon-close" data-close>×</button></div><label>Nome<input name="name" required></label><label>E-mail<input type="email" name="email" required></label><label>Usuário<input name="username" required></label><label>Senha<input type="password" name="password" required></label><label>Perfil<select name="role"><option>VIEWER</option><option>EDITOR</option><option>ADMIN</option></select></label><div class="modal-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary">Criar usuário</button></div></form></dialog>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block page_title %}Clientes{% endblock %}
+{% block eyebrow %}CLIENT OUTCOMES{% endblock %}
+{% block content %}
+<div class="client-toolbar card">
+  <form method="get" action="/clients" class="client-search">
+    <label>Buscar cliente<input name="q" value="{{ q }}" placeholder="Digite o nome do cliente"></label>
+    <button class="btn ghost">Buscar</button>
+    {% if q %}<a class="text-link" href="/clients">Limpar</a>{% endif %}
+  </form>
+  {% if can_edit %}
+  <div class="client-toolbar-actions">
+    <form method="post" action="/clients/import-catalog" onsubmit="return confirm('Importar os {{ client_catalog_count }} nomes da carteira base? Clientes já cadastrados serão ignorados.');">
+      <button class="btn ghost" type="submit">Importar carteira base · {{ client_catalog_count }}</button>
+    </form>
+    <button class="btn primary" data-open="clientDialog">+ Novo cliente</button>
+  </div>
+  {% endif %}
+</div>
+
+{% if imported %}<div class="alert success">{{ imported }} cliente(s) novo(s) importado(s). Os nomes já existentes foram preservados.</div>{% endif %}
+
+<section class="client-grid">
+  {% for x in cards %}
+  <article class="client-card card">
+    <div class="client-head"><div><small>{{ x.client.segment or 'Cliente' }}</small><h3>{{ x.client.name }}</h3></div><span class="tag">{{ x.health }}</span></div>
+    <div class="client-products">{% for p in x.products %}<span class="product-chip {{ p|lower }}">{{ p }}</span>{% endfor %}</div>
+    <div class="client-stats"><div><b>{{ x.projects|length }}</b><small>Projetos</small></div><div><b>{{ x.active_pocs }}</b><small>POCs</small></div><div><b>{{ x.implanted }}</b><small>Implantados</small></div></div>
+    <div class="client-metrics">{% for m in x.metrics %}<div><span>{{ m.name }}</span><b>{{ m.current_value|num }}{{ ' ' + m.unit if m.unit else '' }}</b></div>{% else %}<p class="muted">Sem indicadores cadastrados.</p>{% endfor %}</div>
+    <div class="client-projects">{% for p in x.projects[:3] %}<a href="/projects/{{ p.id }}">{{ p.product }} · {{ p.portfolio_name or 'Projeto' }} <span>→</span></a>{% endfor %}</div>
+  </article>
+  {% else %}
+    <div class="empty-state card">{% if q %}Nenhum cliente encontrado para “{{ q }}”.{% else %}Cadastre seus clientes ou importe a carteira base para começar.{% endif %}</div>
+  {% endfor %}
+</section>
+
+{% if can_edit %}
+<dialog id="clientDialog" class="modal"><form method="post" action="/clients/new" class="modal-card compact"><div class="modal-head"><div><small>CLIENT HUB</small><h2>Novo cliente</h2></div><button type="button" class="icon-close" data-close>×</button></div><label>Nome<input name="name" required></label><label>Segmento<input name="segment" placeholder="Ex.: Financeiro, Telecom, Varejo"></label><div class="modal-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary">Salvar cliente</button></div></form></dialog>
+{% endif %}
+{% endblock %}
