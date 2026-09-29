@@ -7,6 +7,16 @@
   <link rel="stylesheet" href="/static/style.css?v=1.0">
 </head>
 <body class="app-shell">
+  {% set login_avatar = namespace(photo=None, analyst=None) %}
+  {% for a in analysts %}
+    {% set email_match = a.email and user.email and (a.email|lower == user.email|lower) %}
+    {% set name_match = a.name and user.name and (a.name|lower == user.name|lower) %}
+    {% if email_match or name_match %}
+      {% set login_avatar.analyst = a %}
+      {% if a.photo_data %}{% set login_avatar.photo = a.photo_data %}{% endif %}
+    {% endif %}
+  {% endfor %}
+
   <div class="noise"></div>
   <aside class="sidebar">
     <a class="brand" href="/">
@@ -21,7 +31,14 @@
       {% if is_admin %}<a class="nav-link {% if request.url.path == '/users' %}active{% endif %}" href="/users"><span>⚙</span>Usuários</a>{% endif %}
     </nav>
     <div class="sidebar-foot">
-      <div class="user-chip"><span>{{ user.name[0]|upper }}</span><div><b>{{ user.name }}</b><small>{{ user.role }}</small></div></div>
+      <div class="user-chip">
+        {% if login_avatar.photo %}
+          <img src="{{ login_avatar.photo }}" alt="Foto de {{ user.name }}" style="width:36px;height:36px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,.10);box-shadow:0 0 18px rgba(78,216,233,.12);flex:0 0 36px">
+        {% else %}
+          <span>{{ user.name[0]|upper }}</span>
+        {% endif %}
+        <div><b>{{ user.name }}</b><small>{{ user.role }}</small></div>
+      </div>
       <form method="post" action="/logout"><button class="logout">Sair</button></form>
     </div>
   </aside>
@@ -60,6 +77,6 @@
     </form>
   </dialog>
   {% endif %}
-  <script src="/static/app.js?v=1.4"></script>
+  <script src="/static/app.js?v=1.5"></script>
 </body>
 </html>
