@@ -42,14 +42,14 @@
       <div class="modal-head"><div><small>NOVO PROJETO</small><h2>Cadastrar POC</h2></div><button type="button" class="icon-close" data-close>×</button></div>
       <div class="form-grid">
         <label>Cliente<select name="client_id" required><option value="">Selecione...</option>{% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></label>
-        <label>Produto<select name="product" required>{% for x in products %}<option>{{ x }}</option>{% endfor %}</select></label>
+        <label>Produto<select name="product" required data-poc-product>{% for x in products %}<option value="{{ x }}" data-poc-days="{{ poc_days_default.get(x, 15) }}">{{ x }}</option>{% endfor %}</select></label>
         <label>Analista<select name="analyst_id"><option value="">Sem responsável</option>{% for a in analysts %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}</select></label>
         <label>Carteira / Projeto<input name="portfolio_name" placeholder="Ex.: Cobrança Consumer"></label>
         <label>Modelo<input name="model" placeholder="Ex.: IA, Discador, Receptivo"></label>
         <label>Prioridade<select name="priority">{% for x in priorities %}<option>{{ x }}</option>{% endfor %}</select></label>
-        <label>Início POC<input type="date" name="poc_start_date"></label>
-        <label>Fim POC<input type="date" name="poc_end_date"></label>
-        <label>Prazo gerencial<input type="date" name="target_date"></label>
+        <label>Início POC<input type="date" name="poc_start_date" data-poc-start></label>
+        <label>Dias de POC<input type="number" min="1" max="365" name="poc_days" value="15" data-poc-days></label>
+        <label>Fim POC<input type="date" data-poc-end readonly title="Calculado automaticamente em dias corridos"></label>
         <label>Etapa<select name="stage">{% for x in stages %}<option>{{ x }}</option>{% endfor %}</select></label>
         <label>Status<select name="status">{% for x in statuses %}<option>{{ x }}</option>{% endfor %}</select></label>
         <label>Saúde<select name="health">{% for x in healths %}<option>{{ x }}</option>{% endfor %}</select></label>

@@ -5,15 +5,15 @@
 {% if default_password_warning %}<div class="alert warning">Você está usando a senha padrão de demonstração. Antes de publicar, altere <b>INITIAL_ADMIN_PASSWORD</b> no arquivo <code>.env</code>.</div>{% endif %}
 <section class="hero-grid">
   <article class="hero-copy card"><span class="kicker">CONTROL TOWER</span><h2>Uma carteira inteira,<br><em>sem pontos cegos.</em></h2><p>Visualize quem está cuidando de cada cliente, onde a POC está travada e quais projetos precisam da sua atenção hoje.</p><div class="hero-actions"><a class="btn primary" href="/projects">Ver carteira completa</a><a class="btn ghost" href="/team">Capacidade do time</a></div></article>
-  <article class="pulse-card card"><div class="pulse-head"><span>PORTFOLIO PULSE</span><b>{{ summary.attention }}</b></div><div class="pulse-ring" style="--value:{{ (summary.attention / summary.projects * 100) if summary.projects else 0 }}"><div><strong>{{ summary.projects - summary.attention }}</strong><small>estáveis</small></div></div><p>{{ summary.attention }} projeto(s) pedem atenção entre saúde, bloqueio e prazo.</p></article>
+  <article class="pulse-card card"><div class="pulse-head"><span>PORTFOLIO PULSE</span><b>{{ summary.attention }}</b></div><div class="pulse-ring" style="--value:{{ (summary.attention / summary.projects * 100) if summary.projects else 0 }}"><div><strong>{{ summary.projects - summary.attention }}</strong><small>estáveis</small></div></div><p>{{ summary.attention }} projeto(s) pedem atenção entre saúde, bloqueio e fim da POC.</p></article>
 </section>
 
 <section class="kpi-grid">
   <article class="kpi"><span>Projetos ativos</span><strong>{{ summary.projects }}</strong><small>{{ summary.clients }} clientes</small></article>
   <article class="kpi"><span>POCs em execução</span><strong>{{ summary.active_pocs }}</strong><small>rodando agora</small></article>
   <article class="kpi"><span>Implantados</span><strong>{{ summary.implanted }}</strong><small>viraram operação</small></article>
-  <article class="kpi attention"><span>Precisam atenção</span><strong>{{ summary.attention }}</strong><small>saúde, prazo ou bloqueio</small></article>
-  <article class="kpi danger"><span>Atrasados</span><strong>{{ summary.delayed }}</strong><small>prazo gerencial vencido</small></article>
+  <article class="kpi attention"><span>Precisam atenção</span><strong>{{ summary.attention }}</strong><small>saúde, fim da POC ou bloqueio</small></article>
+  <article class="kpi danger"><span>Atrasados</span><strong>{{ summary.delayed }}</strong><small>fim da POC vencido</small></article>
 </section>
 
 <section class="filter-card card">

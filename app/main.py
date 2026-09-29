@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import os
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from dotenv import load_dotenv
@@ -27,6 +27,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "local-change-me")
 SESSION_HTTPS_ONLY = os.getenv("SESSION_HTTPS_ONLY", "false").lower() == "true"
 
 PRODUCTS = ["Locator", "ADA"]
+POC_DAYS_DEFAULT = {"Locator": 15, "ADA": 15}
 HEALTHS = ["Saudável", "Atenção", "Crítico"]
 PRIORITIES = ["Alta", "Média", "Baixa"]
 STAGES = ["Planejamento", "Aguardando cliente", "Desenvolvimento", "Homologação", "POC", "POC encerrada", "Implantação", "Produção", "Concluído", "Cancelado"]
@@ -124,6 +125,28 @@ def to_decimal(value: str | None, default="0"):
         return Decimal(default)
 
 
+def normalize_poc_days(value: int | str | None, product: str | None = None) -> int:
+    default = POC_DAYS_DEFAULT.get(product or "", 15)
+    try:
+        days = int(value) if value not in (None, "") else default
+    except (TypeError, ValueError):
+        days = default
+    return max(1, min(365, days))
+
+
+def calculate_poc_end(start: date | None, days: int) -> date | None:
+    if not start:
+        return None
+    # Dia inicial conta como dia 1. Ex.: 01/10 + 15 dias corridos = 15/10.
+    return start + timedelta(days=max(1, days) - 1)
+
+
+def poc_duration_days(project: Project) -> int:
+    if project.poc_start_date and project.poc_end_date:
+        return max(1, (project.poc_end_date - project.poc_start_date).days + 1)
+    return POC_DAYS_DEFAULT.get(project.product, 15)
+
+
 def lifecycle(project: Project, today: date | None = None):
     today = today or date.today()
     text = f"{project.stage} {project.status}".lower()
@@ -144,7 +167,7 @@ def lifecycle(project: Project, today: date | None = None):
 
 def deadline(project: Project, today: date | None = None):
     today = today or date.today()
-    target = project.target_date or project.poc_end_date
+    target = project.poc_end_date
     if not target:
         return {"date": None, "days": None, "state": "Sem prazo"}
     days = (target - today).days
@@ -171,9 +194,9 @@ def project_payload(project: Project):
     if life in {"Em POC", "POC encerrada"} and not project.metrics:
         guardrails.append("Cadastre pelo menos um KPI de sucesso com meta.")
     if d["state"] == "Atrasado" and life not in {"Implantado", "Concluído", "Cancelado"}:
-        guardrails.append("Prazo vencido: registre decisão, novo prazo ou encerramento da POC.")
+        guardrails.append("Fim da POC vencido: registre decisão, extensão ou encerramento da POC.")
     if d["state"] == "Vence em breve" and project.progress_percent < 80:
-        guardrails.append("Prazo próximo com progresso abaixo de 80%: priorize o próximo marco.")
+        guardrails.append("Fim da POC próximo com progresso abaixo de 80%: priorize o próximo marco.")
     if project.health == "Crítico" and not project.blocker:
         guardrails.append("Projeto crítico sem bloqueio descrito: documente a causa raiz.")
     if life == "Em POC" and not project.next_step:
@@ -189,6 +212,7 @@ def project_payload(project: Project):
         "attention": project.health in {"Atenção", "Crítico"} or d["state"] in {"Atrasado", "Vence em breve"} or bool(project.blocker),
         "guardrails": guardrails,
         "governance_score": governance_score,
+        "poc_days": poc_duration_days(project),
     }
 
 
@@ -199,6 +223,7 @@ def base_context(user: User, db: Session):
         "analysts": db.scalars(select(Analyst).where(Analyst.active.is_(True)).order_by(Analyst.name)).all(),
         "clients": db.scalars(select(Client).where(Client.active.is_(True)).order_by(Client.name)).all(),
         "products": PRODUCTS,
+        "poc_days_default": POC_DAYS_DEFAULT,
         "healths": HEALTHS,
         "priorities": PRIORITIES,
         "stages": STAGES,
@@ -320,8 +345,7 @@ def create_project(
     portfolio_name: str = Form(""),
     model: str = Form(""),
     poc_start_date: str = Form(""),
-    poc_end_date: str = Form(""),
-    target_date: str = Form(""),
+    poc_days: int = Form(15),
     stage: str = Form("Planejamento"),
     status: str = Form("Em andamento"),
     health: str = Form("Saudável"),
@@ -339,15 +363,19 @@ def create_project(
         return redirect_login()
     if not can_edit(user):
         return HTMLResponse("Sem permissão", 403)
+    selected_product = product if product in PRODUCTS else "Locator"
+    start_date = to_date(poc_start_date)
+    duration_days = normalize_poc_days(poc_days, selected_product)
+    end_date = calculate_poc_end(start_date, duration_days)
     project = Project(
         client_id=client_id,
         analyst_id=int(analyst_id) if analyst_id else None,
-        product=product if product in PRODUCTS else "Locator",
+        product=selected_product,
         portfolio_name=portfolio_name.strip() or None,
         model=model.strip() or None,
-        poc_start_date=to_date(poc_start_date),
-        poc_end_date=to_date(poc_end_date),
-        target_date=to_date(target_date) or to_date(poc_end_date),
+        poc_start_date=start_date,
+        poc_end_date=end_date,
+        target_date=end_date,
         stage=stage if stage in STAGES else "Planejamento",
         status=status if status in STATUSES else "Em andamento",
         health=health if health in HEALTHS else "Saudável",
@@ -390,8 +418,7 @@ def update_project(
     portfolio_name: str = Form(""),
     model: str = Form(""),
     poc_start_date: str = Form(""),
-    poc_end_date: str = Form(""),
-    target_date: str = Form(""),
+    poc_days: int = Form(15),
     stage: str = Form(...),
     status: str = Form(...),
     health: str = Form(...),
@@ -418,8 +445,9 @@ def update_project(
     project.portfolio_name = portfolio_name.strip() or None
     project.model = model.strip() or None
     project.poc_start_date = to_date(poc_start_date)
-    project.poc_end_date = to_date(poc_end_date)
-    project.target_date = to_date(target_date) or project.poc_end_date
+    duration_days = normalize_poc_days(poc_days, project.product)
+    project.poc_end_date = calculate_poc_end(project.poc_start_date, duration_days)
+    project.target_date = project.poc_end_date
     project.stage = stage if stage in STAGES else project.stage
     project.status = status if status in STATUSES else project.status
     project.health = health if health in HEALTHS else project.health
