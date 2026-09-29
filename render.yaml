@@ -1,14 +1,21 @@
-services:
+﻿services:
   - type: web
     name: olos-portfolio-command-center
     runtime: docker
     plan: free
+
     envVars:
       - key: SECRET_KEY
         generateValue: true
+
       - key: INITIAL_ADMIN_USERNAME
-        value: admin
+        value: gerber
+
       - key: INITIAL_ADMIN_PASSWORD
         sync: false
+
       - key: DATABASE_URL
         sync: false
+
+      - key: SESSION_HTTPS_ONLY
+        value: "true"
