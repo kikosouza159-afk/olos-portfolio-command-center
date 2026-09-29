@@ -18,8 +18,23 @@ if DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://") and "+psycopg" not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args=connect_args)
+is_sqlite = DATABASE_URL.startswith("sqlite")
+connect_args = {"check_same_thread": False} if is_sqlite else {}
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "connect_args": connect_args,
+}
+
+if not is_sqlite:
+    # Mantém um pequeno pool quente para reduzir reconexões ao Neon/Render.
+    engine_kwargs.update(
+        pool_size=5,
+        max_overflow=5,
+        pool_recycle=300,
+        pool_use_lifo=True,
+    )
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
 
