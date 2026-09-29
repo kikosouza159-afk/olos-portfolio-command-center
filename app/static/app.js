@@ -29,6 +29,26 @@
     });
   });
 
+  document.querySelectorAll('[data-user-analyst]').forEach(select => {
+    const form = select.closest('[data-user-form]') || select.closest('form');
+    if (!form) return;
+    const nameInput = form.querySelector('[data-user-name]');
+    const emailInput = form.querySelector('[data-user-email]');
+    const usernameInput = form.querySelector('[data-user-username]');
+
+    select.addEventListener('change', () => {
+      const option = select.options[select.selectedIndex];
+      if (!option || !option.value) return;
+      const analystName = option.dataset.analystName || '';
+      const analystEmail = option.dataset.analystEmail || '';
+      if (nameInput) nameInput.value = analystName;
+      if (emailInput) emailInput.value = analystEmail;
+      if (usernameInput && !usernameInput.value.trim() && analystEmail.includes('@')) {
+        usernameInput.value = analystEmail.split('@')[0];
+      }
+    });
+  });
+
   const isoToUTC = value => {
     if (!value) return null;
     const [year, month, day] = value.split('-').map(Number);
