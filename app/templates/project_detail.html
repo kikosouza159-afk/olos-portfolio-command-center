@@ -2,21 +2,10 @@
 {% block page_title %}{{ project.client.name }} · {{ project.product }}{% endblock %}
 {% block eyebrow %}PROJECT ROOM{% endblock %}
 {% block content %}
-{% set result = namespace(tentativas=none, atendidas=none, cpc=none, acordo=none) %}
-{% for m in project.metrics %}
-  {% set key = m.name|lower %}
-  {% if key == 'tentativas' %}{% set result.tentativas = m %}{% endif %}
-  {% if key == 'atendidas' %}{% set result.atendidas = m %}{% endif %}
-  {% if key == 'cpc' %}{% set result.cpc = m %}{% endif %}
-  {% if key == 'acordo' %}{% set result.acordo = m %}{% endif %}
-{% endfor %}
-{% set result_reference = result.tentativas.reference_date if result.tentativas and result.tentativas.reference_date else (result.atendidas.reference_date if result.atendidas and result.atendidas.reference_date else (result.cpc.reference_date if result.cpc and result.cpc.reference_date else (result.acordo.reference_date if result.acordo and result.acordo.reference_date else none))) %}
-
 <section class="project-hero card">
   <div>
     <div class="hero-tags"><span class="product-chip {{ project.product|lower }}">{{ project.product }}</span><span class="tag">{{ item.lifecycle }}</span><span class="tag">{{ project.health }}</span></div>
     <h2>{{ project.portfolio_name or project.client.name }}</h2>
-    <p>{{ project.objective or 'Defina o objetivo da POC para orientar a análise do time.' }}</p>
   </div>
   <div class="project-score">
     <div class="score-ring" data-poc-progress data-poc-start="{{ project.poc_start_date.isoformat() if project.poc_start_date else '' }}" data-poc-end="{{ project.poc_end_date.isoformat() if project.poc_end_date else '' }}">
@@ -34,23 +23,23 @@
   <article class="kpi"><span>Potencial anualizado</span><strong class="small-value">{{ ((project.potential_revenue|float) * 12)|money }}</strong><small>potencial mensal × 12</small></article>
 </section>
 
-<section class="copilot card"><div class="copilot-icon">✦</div><div class="grow"><small>PLANNING COPILOT · GOVERNANÇA {{ item.governance_score }}%</small><h3>Próximos controles recomendados</h3><div class="copilot-list">{% for tip in item.guardrails %}<span>{{ '%02d'|format(loop.index) }} · {{ tip }}</span>{% endfor %}</div></div><div class="governance-ring" style="--value:{{ item.governance_score }}"><b>{{ item.governance_score }}%</b></div></section>
-
-<section class="detail-grid">
-  <article class="panel card span-2">
-    <div class="panel-head">
-      <div><small>RESULT LAB</small><h3>Indicadores da POC</h3>{% if result_reference %}<p>Referência {{ result_reference.strftime('%d/%m/%Y') }}.</p>{% else %}<p>Atualize os principais indicadores da operação.</p>{% endif %}</div>
-      {% if can_edit %}<button class="btn ghost" type="button" data-open="resultLabDialog">Editar resultados</button>{% endif %}
+<section class="copilot card">
+  <div class="copilot-icon">✦</div>
+  <div class="grow">
+    <small>PLANNING COPILOT · GOVERNANÇA</small>
+    <h3>Alertas de acompanhamento</h3>
+    <div class="copilot-list">
+      {% set shown = namespace(count=0) %}
+      {% for tip in item.guardrails %}
+        {% set low = tip|lower %}
+        {% if 'objetivo' not in low and 'próxima ação' not in low and 'kpi' not in low and 'bloqueio' not in low %}
+          <span>{{ '%02d'|format(shown.count + 1) }} · {{ tip }}</span>
+          {% set shown.count = shown.count + 1 %}
+        {% endif %}
+      {% endfor %}
+      {% if shown.count == 0 %}<span>01 · Acompanhamento em dia.</span>{% endif %}
     </div>
-    <div class="metric-grid">
-      <article class="metric-card"><span>Tentativas</span><strong>{{ (result.tentativas.current_value if result.tentativas else 0)|num }}</strong><small>volume discado</small></article>
-      <article class="metric-card"><span>Atendidas</span><strong>{{ (result.atendidas.current_value if result.atendidas else 0)|num }}</strong><small>chamadas atendidas</small></article>
-      <article class="metric-card"><span>CPC</span><strong>{{ (result.cpc.current_value if result.cpc else 0)|num }}</strong><small>contato com a pessoa certa</small></article>
-      <article class="metric-card"><span>Acordo</span><strong>{{ (result.acordo.current_value if result.acordo else 0)|num }}</strong><small>acordos realizados</small></article>
-    </div>
-  </article>
-  <article class="panel card"><div class="panel-head"><div><small>NEXT MOVE</small><h3>Próxima ação</h3></div></div><p class="big-note">{{ project.next_step or 'Nenhuma próxima ação cadastrada.' }}</p></article>
-  <article class="panel card"><div class="panel-head"><div><small>BLOCKER RADAR</small><h3>Bloqueio</h3></div></div><p class="big-note {{ 'danger-text' if project.blocker else '' }}">{{ project.blocker or 'Nenhum bloqueio registrado.' }}</p></article>
+  </div>
 </section>
 
 {% if can_edit %}
@@ -70,9 +59,6 @@
     <label>Saúde<select name="health">{% for x in healths %}<option {% if project.health==x %}selected{% endif %}>{{ x }}</option>{% endfor %}</select></label>
     <label>Prioridade<select name="priority">{% for x in priorities %}<option {% if project.priority==x %}selected{% endif %}>{{ x }}</option>{% endfor %}</select></label>
     <label>Potencial financeiro mensal<input name="potential_revenue" value="{{ project.potential_revenue }}"></label>
-    <label class="span-2">Objetivo<textarea name="objective" rows="2">{{ project.objective or '' }}</textarea></label>
-    <label class="span-2">Próxima ação<textarea name="next_step" rows="2">{{ project.next_step or '' }}</textarea></label>
-    <label class="span-2">Bloqueio<textarea name="blocker" rows="2">{{ project.blocker or '' }}</textarea></label>
     <label class="span-2">Observações<textarea name="notes" rows="3">{{ project.notes or '' }}</textarea></label>
     <div class="span-2 form-actions"><button class="btn primary">Salvar atualização</button></div>
   </form>
@@ -80,20 +66,4 @@
 {% endif %}
 
 <section class="panel card"><div class="panel-head"><div><small>AUDIT TRAIL</small><h3>Histórico</h3></div></div><div class="timeline">{% for h in project.history %}<div><i></i><span><b>{{ h.action }}</b><small>{{ h.created_at.strftime('%d/%m/%Y %H:%M') }}</small><p>{{ h.summary }}</p></span></div>{% else %}<div class="empty-state">Sem histórico.</div>{% endfor %}</div></section>
-
-{% if can_edit %}
-<dialog id="resultLabDialog" class="modal">
-  <form class="modal-card compact" data-result-lab-form data-project-id="{{ project.id }}">
-    <div class="modal-head"><div><small>RESULT LAB</small><h2>Atualizar resultados</h2></div><button type="button" class="icon-close" data-close>×</button></div>
-    <div class="form-grid">
-      <label>Tentativas<input type="number" min="0" step="1" name="tentativas" value="{{ (result.tentativas.current_value if result.tentativas else 0)|int }}"></label>
-      <label>Atendidas<input type="number" min="0" step="1" name="atendidas" value="{{ (result.atendidas.current_value if result.atendidas else 0)|int }}"></label>
-      <label>CPC<input type="number" min="0" step="1" name="cpc" value="{{ (result.cpc.current_value if result.cpc else 0)|int }}"></label>
-      <label>Acordo<input type="number" min="0" step="1" name="acordo" value="{{ (result.acordo.current_value if result.acordo else 0)|int }}"></label>
-      <label class="span-2">Data de referência<input type="date" name="reference_date" value="{{ result_reference.isoformat() if result_reference else '' }}"></label>
-    </div>
-    <div class="modal-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary" type="submit">Salvar resultados</button></div>
-  </form>
-</dialog>
-{% endif %}
 {% endblock %}
