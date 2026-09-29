@@ -77,7 +77,9 @@ class Project(Base):
     # extras principalmente na visão de Equipe.
     client: Mapped[Client] = relationship(back_populates="projects", lazy="joined")
     analyst: Mapped[Analyst | None] = relationship(back_populates="projects", lazy="joined")
-    metrics: Mapped[list["ProjectMetric"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    # A tela de projetos ainda consulta a coleção para regras internas. selectin
+    # agrupa os indicadores em uma única consulta, em vez de uma por projeto.
+    metrics: Mapped[list["ProjectMetric"]] = relationship(back_populates="project", cascade="all, delete-orphan", lazy="selectin")
     history: Mapped[list["ProjectHistory"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
 
